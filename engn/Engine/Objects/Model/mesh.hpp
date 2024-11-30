@@ -18,7 +18,6 @@ public:
 		};
 		std::array<Element, 3> indices;
 	};
-	std::string name;
 	std::vector<glm::vec4> vertices;
 	std::vector<glm::vec3> normals, tex_coords;
 	std::vector<Face> faces;
@@ -35,7 +34,6 @@ public:
 		std::array<glm::vec3, 3> normals;
 	};
 	std::vector<Triangle> triangles;
-	std::string name;
 
 	void setupBuffers();
 	RawMesh toRMesh();

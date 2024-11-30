@@ -13,14 +13,13 @@ int main() {
 	}
 
 	auto camera{ std::make_shared<Camera>() };
-	auto scene{ std::make_shared<Scene>() };
 	auto shader{ std::make_shared<Shader>() };
 	auto loader{ std::make_unique<ObjLoader>() };
 
 	camera->position = glm::vec3{ 0.0f, 0.0f, 3.0f };
 	bool resourses_loaded{ false };
 	try {
-		loader->read("Objs\\abizana.obj");
+		loader->read("Objs\\scene.obj");
 		shader->read(
 			"Shaders\\vertex.glsl",
 			"Shaders\\fragment.glsl");
@@ -32,11 +31,10 @@ int main() {
 	if (resourses_loaded) {
 		std::cout << "Resourses loaded successfully" << std::endl;
 	}
-	
-	auto model{ loader->getModel() };
-	scene->add(model);
-	loader.reset();
+
+	auto scene{ std::make_shared<Scene>(loader->getScene()) };
 	scene->setupAllBuffers();
+	loader.reset();
 	engine->setCamera(camera);
 	engine->setScene(scene);
 	engine->setShader(shader);

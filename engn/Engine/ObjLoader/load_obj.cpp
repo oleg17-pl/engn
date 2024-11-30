@@ -9,15 +9,88 @@
 
 #include "load_obj.hpp"
 
-void ObjLoader::createNewMesh(const std::string &name) {
-	if (!tmp_rmeshes.empty()) {
-		vertex_faces_offset += tmp_rmeshes.back().vertices.size();
-		normal_faces_offset += tmp_rmeshes.back().normals.size();
-		texture_faces_offset += tmp_rmeshes.back().tex_coords.size();
+void ObjLoader::createNewModel(const std::string &name) {
+	vertex_faces_offset += tmp_rmesh.vertices.size();
+	normal_faces_offset += tmp_rmesh.normals.size();
+	texture_faces_offset += tmp_rmesh.tex_coords.size();
+	Model model;
+	model.name = name;
+	model.mesh = tmp_rmesh.ToMesh();
+	models.push_back(model);
+	tmp_rmesh = RawMesh{};
+}
+
+void ObjLoader::processVertexLine(std::stringstream &ls) {
+	glm::vec4 vec{};
+	ls >> vec.x >> vec.y >> vec.z;
+	if (!(ls >> vec.w)) {
+		vec.w = 1.0f;
 	}
-	RawMesh mesh;
-	mesh.name = name;
-	tmp_rmeshes.push_back(mesh);
+	tmp_rmesh.vertices.push_back(vec);
+}
+
+void ObjLoader::processNormalLine(std::stringstream &ls) {
+	glm::vec3 vec{};
+	ls >> vec.x >> vec.y >> vec.z;
+	tmp_rmesh.normals.push_back(vec);
+}
+
+void ObjLoader::processTexCordLine(std::stringstream &ls) {
+	glm::vec3 vec{};
+	ls >> vec.x >> vec.y >> vec.z;
+	tmp_rmesh.tex_coords.push_back(vec);
+}
+
+void ObjLoader::processFaceLine(std::stringstream &ls) {
+	std::array<RawMesh::Face::Element, 3> indices{};
+	RawMesh::Face::Element tmp_triangle{};
+	std::string token;
+	size_t el_index{};
+	while (ls >> token) {
+		std::stringstream token_stream{ token };
+		std::string index;
+		int part{ 1 };
+		for (part; std::getline(token_stream, index, '/'); part++) {
+			if (part >= 4) {
+				throw InvalidFaceElement{ current_row, part };
+			}
+			if (index.empty()) {
+				if (part == 2) {
+					continue;
+				}
+				else {
+					throw InvalidFaceElement{ current_row, part };
+				}
+			}
+			int num{ std::stoi(index) };
+			if (num <= 0) {
+				throw InvalidFaceElement{ current_row, part };
+			}
+			if (part == 1) {
+				tmp_triangle.v = num - vertex_faces_offset;
+			}
+			else if (part == 2) {
+				tmp_triangle.t = num - texture_faces_offset;
+			}
+			else if (part == 3) {
+				tmp_triangle.n = num - normal_faces_offset;
+			}
+		}
+		if (part <= 3) {
+			if (part == 2) {
+				tmp_triangle.t = 0;
+			}
+			else if (part == 2 || part == 3) {
+				tmp_triangle.n = 0;
+			}
+			else {
+				throw InvalidFaceElement{ current_row, part };
+			}
+		}
+		indices[el_index] = tmp_triangle;
+		el_index++;
+	}
+	tmp_rmesh.faces.push_back(RawMesh::Face{ indices });
 }
 
 std::string ObjLoader::getFileName(const std::string &path) {
@@ -44,7 +117,8 @@ std::string ObjLoader::getTag(const std::string &line) {
 }
 
 bool ObjLoader::checkValidTag(const std::string &tag) {
-	if (tag == "#" ||
+	return (
+		tag == "#" ||
 		tag == "mtllib" ||
 		tag == "usemtl" ||
 		tag == "s" ||
@@ -54,12 +128,8 @@ bool ObjLoader::checkValidTag(const std::string &tag) {
 		tag == "vt" ||
 		tag == "f" ||
 		tag == "m" ||
-		tag == "g") {
-		return true;
-	}
-	else {
-		return false;
-	}
+		tag == "g"
+		);
 }
 
 void ObjLoader::processLine(const std::string &line) {
@@ -74,80 +144,23 @@ void ObjLoader::processLine(const std::string &line) {
 	if (tag == "#") {
 		return;
 	}
-	if (tmp_rmeshes.empty() && tag != "o") {
-		createNewMesh(DEFAULT_NAME);
-	}
-	if (tag == "o") {
-		createNewMesh(value);
+	else if (tag == "o") {
+		if (current_row != 1) {
+			createNewModel(prev_name);
+		}
+		prev_name = value;
 	}
 	else if (tag == "v") {
-		glm::vec4 vec{};
-		vs >> vec.x >> vec.y >> vec.z;
-		if (!(vs >> vec.w)) {
-			vec.w = 1.0f;
-		}
-		tmp_rmeshes.back().vertices.push_back(vec);
+		processVertexLine(vs);
 	}
 	else if (tag == "vn") {
-		glm::vec3 vec{};
-		vs >> vec.x >> vec.y >> vec.z;
-		tmp_rmeshes.back().normals.push_back(vec);
+		processNormalLine(vs);
 	}
 	else if (tag == "vt") {
-		glm::vec3 vec{};
-		vs >> vec.x >> vec.y >> vec.z;
-		tmp_rmeshes.back().tex_coords.push_back(vec);
+		processTexCordLine(vs);
 	}
 	else if (tag == "f") {
-		std::array<RawMesh::Face::Element, 3> indices{};
-		RawMesh::Face::Element tmp_triangle{};
-		std::string token;
-		size_t el_index{};
-		while (vs >> token) {
-			std::stringstream token_stream{ token };
-			std::string index;
-			int part{ 1 };
-			for (part; std::getline(token_stream, index, '/'); part++) {
-				if (part >= 4) {
-					throw InvalidFaceElement{ current_row, part };
-				}
-				if (index.empty()) {
-					if (part == 2) {
-						continue;
-					}
-					else {
-						throw InvalidFaceElement{ current_row, part };
-					}
-				}
-				int num{ std::stoi(index) };
-				if (num <= 0) {
-					throw InvalidFaceElement{ current_row, part };
-				}
-				if (part == 1) {
-					tmp_triangle.v = num - vertex_faces_offset;
-				}
-				else if (part == 2) {
-					tmp_triangle.t = num - texture_faces_offset;
-				}
-				else if (part == 3) {
-					tmp_triangle.n = num - normal_faces_offset;
-				}
-			}
-			if (part <= 3) {
-				if (part == 2) {
-					tmp_triangle.t = 0;
-				}
-				else if (part == 2 || part == 3) {
-					tmp_triangle.n = 0;
-				}
-				else {
-					throw InvalidFaceElement{ current_row, part };
-				}
-			}
-			indices[el_index] = tmp_triangle;
-			el_index++;
-		}
-		tmp_rmeshes.back().faces.push_back(RawMesh::Face{ indices });
+		processFaceLine(vs);
 	}
 }
 
@@ -157,38 +170,35 @@ void ObjLoader::read(const std::string &path) {
 		throw ObjFileOpenException{ current_row, path };
 	}
 	std::string line;
-	for (current_row; std::getline(file, line); current_row++) {
+	while (std::getline(file, line)) {
 		if (!line.empty()) {
 			processLine(line);
 		}
+		current_row++;
 	}
-	std::vector<Mesh> meshes;
-	meshes.reserve(tmp_rmeshes.size());
-	for (auto &rmesh : tmp_rmeshes) {
-		meshes.push_back(rmesh.ToMesh());
-	}
-	model.name = getFileName(path);
-	model.meshes = meshes;
-	tmp_rmeshes.clear();
-
+	createNewModel(prev_name);
+	scene = Scene{ getFileName(path), models };
 	opened = true;
 	file.close();
 }
 
 ObjLoader::ObjLoader()
-	: tmp_rmeshes{},
+	: tmp_rmesh{},
+	models{},
+	scene{},
 	opened{ false },
 	current_row{ 1 },
 	vertex_faces_offset{},
 	texture_faces_offset{},
-	normal_faces_offset{}
+	normal_faces_offset{},
+	prev_name{ DEFAULT_NAME }
 {}
 
 ObjLoader::ObjLoader(const std::string &path) : ObjLoader() { read(path); }
 
-Model ObjLoader::getModel() const {
+Scene ObjLoader::getScene() const {
 	if (!opened) {
 		throw FileNotOpenedException{ current_row };
 	}
-	return model;
+	return scene;
 }

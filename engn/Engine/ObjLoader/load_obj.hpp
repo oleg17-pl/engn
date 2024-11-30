@@ -9,17 +9,29 @@
 
 #include "obj_exceptions.hpp"
 #include "../Objects/Model/model.hpp"
+#include "../Scene/scene.hpp"
+
+const std::string DEFAULT_NAME{ "default" };
 
 class ObjLoader {
 private:
-	std::vector<RawMesh> tmp_rmeshes;
-	Model model;
+	RawMesh tmp_rmesh;
+	std::vector<Model> models;
+	Scene scene;
+
 	unsigned int
 		vertex_faces_offset,
 		texture_faces_offset,
 		normal_faces_offset;
 
-	void createNewMesh(const std::string &name);
+	std::string prev_name;
+
+	void createNewModel(const std::string &name);
+
+	void processVertexLine(std::stringstream &ls);
+	void processNormalLine(std::stringstream &ls);
+	void processTexCordLine(std::stringstream &ls);
+	void processFaceLine(std::stringstream &ls);
 protected:
 	bool opened;
 	int current_row;
@@ -32,7 +44,7 @@ public:
 	void read(const std::string &path);
 	ObjLoader();
 	ObjLoader(const std::string &path);
-	Model getModel() const;
+	Scene getScene() const;
 };
 
 #endif // !LOAD_OBJ_HPP

@@ -10,13 +10,12 @@
 #include "../Interfaces/drawable.hpp"
 #include "mesh.hpp"
 
-class Model final : public Object, private IForeachable<Mesh>, private IDrawable {
+class Model final : public Object, private IDrawable {
 private:
-	void forEachMembers(std::function<void(Mesh &)> func) override;
 	void draw() override;
 public:
 	std::string name;
-	std::vector<Mesh> meshes;
+	Mesh mesh;
 
 	Model(
 		const glm::vec3 &position = glm::vec3{ 0.0f },

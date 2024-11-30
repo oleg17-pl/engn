@@ -19,7 +19,9 @@ private:
 	void forEachMembers(std::function<void(Model &)> func) override;
 	void draw() override;
 public:
-	Scene(const std::vector<Model> &models = std::vector<Model>{});
+	std::string name;
+
+	Scene(const std::string name = std::string{}, const std::vector<Model> models = std::vector<Model>{});
 	void add(const Model &model);
 	void del(const std::string &name);
 	void moveAll(const glm::vec3 &translation);

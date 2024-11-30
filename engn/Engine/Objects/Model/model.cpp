@@ -7,28 +7,17 @@
 
 #include "model.hpp"
 
-void Model::forEachMembers(std::function<void(Mesh &)> func) {
-	for (auto &mesh : meshes) {
-		func(mesh);
-	}
-}
-
 void Model::setupBuffers() {
-	auto setup{ [](Mesh &mesh) {
-		mesh.setupBuffers();
-	} };
-	forEachMembers(setup);
+	mesh.setupBuffers();
 }
 
 void Model::activate() {
-	forEachMembers([](Mesh &mesh) { glBindVertexArray(mesh.VAO); });
+	glBindVertexArray(mesh.VAO);
 }
 
 void Model::draw() {
 	activate();
-	forEachMembers([](Mesh &mesh) {
-		glDrawArrays(GL_TRIANGLES, 0, mesh.triangles.size() * 3);
-	});
+	glDrawArrays(GL_TRIANGLES, 0, mesh.triangles.size() * 3);
 }
 
 Model::Model(const glm::vec3 &position, const glm::quat &orientation)

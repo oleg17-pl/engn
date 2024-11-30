@@ -43,7 +43,7 @@ private:
 	void updateDeltaTime();
 	void loop();
 public:
-	static decltype(instance) getInstance();
+	static std::shared_ptr<Engine> getInstance();
 	bool init(const WindowConfig &wconf);
 
 	void setCamera(const std::shared_ptr<Camera> &camera);

@@ -22,14 +22,12 @@ Mesh RawMesh::ToMesh() {
 		triangles.push_back(triangle);
 	}
 	Mesh mesh;
-	mesh.name = name;
 	mesh.triangles = triangles;
 	return mesh;
 }
 
 RawMesh Mesh::toRMesh() {
 	RawMesh rmesh;
-	rmesh.name = name;
 	size_t f_index{ 1 };
 	for (auto &tr : triangles) {
 		RawMesh::Face face;

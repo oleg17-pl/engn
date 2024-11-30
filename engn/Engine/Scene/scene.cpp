@@ -14,7 +14,10 @@ void Scene::forEachMembers(std::function<void(Model &)> func) {
 	}
 }
 
-Scene::Scene(const std::vector<Model> &models) : models{ models } {}
+Scene::Scene(const std::string name, const std::vector<Model> models)
+	: name{ name },
+	models{ models }
+{}
 
 void Scene::add(const Model &model) {
 	models.push_back(model);
